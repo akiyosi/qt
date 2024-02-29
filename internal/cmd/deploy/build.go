@@ -104,6 +104,8 @@ func build(mode, target, path, ldFlagsCustom, tagsCustom, name, depPath string, 
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%v=%v", key, value))
 	}
 
+	fmt.Println("build command:", cmd.String())
+
 	utils.RunCmd(cmd, fmt.Sprintf("build for %v on %v", target, runtime.GOOS))
 
 	if target == "darwin" && !fast {
