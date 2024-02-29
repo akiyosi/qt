@@ -253,7 +253,8 @@ func InitProcess() {
 
 	var runPath string
 
-	if Config.Download && Config.Path == "" {
+	// if Config.Download && Config.Path == "" {
+	if false {
 
 		var ending string
 		if runtime.GOOS == "windows" {
