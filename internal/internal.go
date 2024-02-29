@@ -253,8 +253,7 @@ func InitProcess() {
 
 	var runPath string
 
-	// if Config.Download && Config.Path == "" {
-	if false {
+	if Config.Download && Config.Path == "" {
 
 		var ending string
 		if runtime.GOOS == "windows" {
@@ -387,12 +386,10 @@ func InitProcess() {
 		}
 	}
 
-	// if Config.Path != "" {
-	if false {
+	if Config.Path != "" {
 		runPath = Config.Path
 	}
 
-	runPath = "./interop_server"
 	process := exec.Command(runPath)
 	rc, err := process.StderrPipe()
 	if err != nil {
