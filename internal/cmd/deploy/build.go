@@ -123,7 +123,7 @@ func build(mode, target, path, ldFlagsCustom, tagsCustom, name, depPath string, 
 	utils.RemoveAll(filepath.Join(path, "cgo_main_wrapper.go"))
 
 	if comply {
-		fmt.Println("comply", strip.String())
+		fmt.Println("comply")
 		dirs, err := ioutil.ReadDir(depPath + "_obj")
 		if err != nil {
 			utils.Log.WithError(err).Error("failed to read object dir")
