@@ -115,9 +115,11 @@ func Deploy(mode, target, path string, docker bool, ldFlags, tags string, fast b
 			minimal.Minimal(path, target, tags, true)
 		}
 
+		fmt.Println("build: ", mode, target, path, ldFlags, tags, name, depPath, fast, comply)
 		build(mode, target, path, ldFlags, tags, name, depPath, fast, comply)
 
 		if !(fast || ((utils.QT_DEBUG_QML() || utils.QT_FELGO_LIVE()) && target == runtime.GOOS)) && !(utils.QT_GEN_GO_WRAPPER() && !utils.QT_FAT()) || (target == "js" || target == "wasm") {
+			fmt.Println("bundle: ", mode, target, path, name, depPath, tags, fast)
 			bundle(mode, target, path, name, depPath, tags, fast)
 		} else if fast || (utils.QT_DEBUG_QML() || utils.QT_FELGO_LIVE()) || utils.QT_GEN_GO_WRAPPER() {
 			switch target {

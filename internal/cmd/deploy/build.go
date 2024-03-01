@@ -116,12 +116,14 @@ func build(mode, target, path, ldFlagsCustom, tagsCustom, name, depPath string, 
 			strip = exec.Command(strings.TrimSuffix(env["CC"], "clang")+"strip", "-x", out) //TODO: -u -r
 		}
 		strip.Dir = path
+		fmt.Println("strip cmd:", strip.String())
 		utils.RunCmd(strip, fmt.Sprintf("strip binary for %v on %v", target, runtime.GOOS))
 	}
 
 	utils.RemoveAll(filepath.Join(path, "cgo_main_wrapper.go"))
 
 	if comply {
+		fmt.Println("comply", strip.String())
 		dirs, err := ioutil.ReadDir(depPath + "_obj")
 		if err != nil {
 			utils.Log.WithError(err).Error("failed to read object dir")

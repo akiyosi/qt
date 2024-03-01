@@ -184,6 +184,7 @@ func InitEnv(target string, docker bool, path string) {
 
 	if !utils.ExistsDir(utils.QT_DIR()) {
 		qt_dir := strings.TrimSpace(utils.RunCmd(utils.GoList("{{.Dir}}", "github.com/akiyosi/env_"+runtime.GOOS+"_amd64_"+strconv.Itoa(utils.QT_VERSION_NUM())[:3], "-find"), "get env dir"))
+		fmt.Println("qt dir:", utils.QT_DIR())
 
 		switch runtime.GOOS {
 		case "linux", "darwin", "windows":
