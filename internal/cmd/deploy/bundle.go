@@ -52,7 +52,7 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 
 		cmd := exec.Command(copy, append(args, src, dst+suffix)...)
 		utils.RunCmd(cmd, fmt.Sprintf("copy %v to %v for %v on %v", filepath.Base(src), filepath.Base(dst), target, runtime.GOOS))
-		fmt.Println("bundle:", cmd.String())
+		// fmt.Println("bundle:", cmd.String())
 	}
 
 	switch target {
@@ -117,7 +117,7 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 		dep.Args = append(dep.Args, filepath.Join(depPath, name+".app"), "-qmldir="+path)
 		dep.Dir = filepath.Dir(dep.Path)
 		utils.RunCmd(dep, fmt.Sprintf("deploy for %v on %v", target, runtime.GOOS))
-		fmt.Println("deploy:", dep.String())
+		// fmt.Println("deploy:", dep.String())
 
 		copyCmd = exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim6")
 		utils.RunCmd(copyCmd, "copy binary 6")
