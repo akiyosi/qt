@@ -50,8 +50,8 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 			}
 		}
 
-		cmd := exec.Command(copy, append(args, src, dst+suffix)...), fmt.Sprintf("copy %v to %v for %v on %v", filepath.Base(src), filepath.Base(dst), target, runtime.GOOS)
-		utils.RunCmd(cmd)
+		cmd := exec.Command(copy, append(args, src, dst+suffix)...)
+		utils.RunCmd(cmd, fmt.Sprintf("copy %v to %v for %v on %v", filepath.Base(src), filepath.Base(dst), target, runtime.GOOS))
 		fmt.Println("bundle:", cmd.String())
 	}
 
