@@ -108,6 +108,12 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 		//break the rpath
 		pPath := "/broken/"
 		fn := filepath.Join(depPath, name+".app", "Contents", "MacOS", name)
+
+
+		copyCmd := exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim2")
+		utils.RunCmd(copyCmd, "copy binary")
+
+
 		data, err := ioutil.ReadFile(fn)
 		if err != nil {
 			utils.Log.WithError(err).Warn("couldn't find", fn)
