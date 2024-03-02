@@ -60,8 +60,8 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 
 		fn := filepath.Join(depPath, name+".app", "Contents", "MacOS", name)
 
-		copyCmd := exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim2")
-		utils.RunCmd(copyCmd, "copy binary 2")
+		// copyCmd := exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim2")
+		// utils.RunCmd(copyCmd, "copy binary 2")
 
 		//copy default assets
 		utils.Save(filepath.Join(depPath, name+".app", "Contents", "Info.plist"), darwin_plist(name))
@@ -69,8 +69,8 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 		utils.MkdirAll(filepath.Join(depPath, name+".app", "Contents", "Resources"))
 		utils.Save(filepath.Join(depPath, name+".app", "Contents", "Resources", "empty.lproj"), "")
 
-		copyCmd = exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim3")
-		utils.RunCmd(copyCmd, "copy binary 3")
+		// copyCmd = exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim3")
+		// utils.RunCmd(copyCmd, "copy binary 3")
 
 		//copy custom assets
 		assets := filepath.Join(path, target)
@@ -88,8 +88,8 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 			}
 		}
 
-		copyCmd = exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim4")
-		utils.RunCmd(copyCmd, "copy binary 4")
+		// copyCmd = exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim4")
+		// utils.RunCmd(copyCmd, "copy binary 4")
 
 		if utils.QT_STATIC() {
 			break
@@ -110,8 +110,8 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 			break
 		}
 
-		copyCmd = exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim5")
-		utils.RunCmd(copyCmd, "copy binary 5")
+		// copyCmd = exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim5")
+		// utils.RunCmd(copyCmd, "copy binary 5")
 
 		dep := exec.Command(utils.ToolPath("macdeployqt", target))
 		dep.Args = append(dep.Args, filepath.Join(depPath, name+".app"), "-qmldir="+path)
@@ -119,8 +119,8 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 		utils.RunCmd(dep, fmt.Sprintf("deploy for %v on %v", target, runtime.GOOS))
 		// fmt.Println("deploy:", dep.String())
 
-		copyCmd = exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim6")
-		utils.RunCmd(copyCmd, "copy binary 6")
+		// copyCmd = exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim6")
+		// utils.RunCmd(copyCmd, "copy binary 6")
 
 		//break the rpath
 		pPath := "/broken/"

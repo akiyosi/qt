@@ -120,8 +120,8 @@ func build(mode, target, path, ldFlagsCustom, tagsCustom, name, depPath string, 
 		utils.RunCmd(strip, fmt.Sprintf("strip binary for %v on %v", target, runtime.GOOS))
 	}
 
-	copyCmd := exec.Command("cp", "-pR", out+ending, "/Users/akiyosi/test/")
-	utils.RunCmd(copyCmd, "copy binary")
+	// copyCmd := exec.Command("cp", "-pR", out+ending, "/Users/akiyosi/test/")
+	// utils.RunCmd(copyCmd, "copy binary")
 
 	utils.RemoveAll(filepath.Join(path, "cgo_main_wrapper.go"))
 
