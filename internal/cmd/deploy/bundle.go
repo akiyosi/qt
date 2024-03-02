@@ -58,11 +58,19 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 	switch target {
 	case "darwin":
 
+		fn := filepath.Join(depPath, name+".app", "Contents", "MacOS", name)
+
+		copyCmd := exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim2")
+		utils.RunCmd(copyCmd, "copy binary 2")
+
 		//copy default assets
 		utils.Save(filepath.Join(depPath, name+".app", "Contents", "Info.plist"), darwin_plist(name))
 		utils.Save(filepath.Join(depPath, name+".app", "Contents", "PkgInfo"), darwin_pkginfo())
 		utils.MkdirAll(filepath.Join(depPath, name+".app", "Contents", "Resources"))
 		utils.Save(filepath.Join(depPath, name+".app", "Contents", "Resources", "empty.lproj"), "")
+
+		copyCmd := exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim3")
+		utils.RunCmd(copyCmd, "copy binary 3")
 
 		//copy custom assets
 		assets := filepath.Join(path, target)
@@ -79,6 +87,9 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 				utils.RunCmd(exec.Command("install_name_tool", "-add_rpath", "@executable_path/../Frameworks", filepath.Join(depPath, name+".app", "Contents", "MacOS", name)), "add an rpath to the binary")
 			}
 		}
+
+		copyCmd := exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim4")
+		utils.RunCmd(copyCmd, "copy binary 4")
 
 		if utils.QT_STATIC() {
 			break
@@ -99,20 +110,20 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 			break
 		}
 
+		copyCmd := exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim5")
+		utils.RunCmd(copyCmd, "copy binary 5")
+
 		dep := exec.Command(utils.ToolPath("macdeployqt", target))
 		dep.Args = append(dep.Args, filepath.Join(depPath, name+".app"), "-qmldir="+path)
 		dep.Dir = filepath.Dir(dep.Path)
 		utils.RunCmd(dep, fmt.Sprintf("deploy for %v on %v", target, runtime.GOOS))
 		fmt.Println("deploy:", dep.String())
 
+		copyCmd := exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim6")
+		utils.RunCmd(copyCmd, "copy binary 6")
+
 		//break the rpath
 		pPath := "/broken/"
-		fn := filepath.Join(depPath, name+".app", "Contents", "MacOS", name)
-
-
-		copyCmd := exec.Command("cp", "-pR", fn, "/Users/akiyosi/test/goneovim2")
-		utils.RunCmd(copyCmd, "copy binary")
-
 
 		data, err := ioutil.ReadFile(fn)
 		if err != nil {
