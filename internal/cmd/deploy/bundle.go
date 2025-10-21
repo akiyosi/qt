@@ -467,33 +467,77 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 				copyCmd = "cp"
 			}
 
+			// exec windeployqt
 			deploy := exec.Command(utils.ToolPath("windeployqt", target))
 			deploy.Args = append(deploy.Args, "--verbose=2", "--force", fmt.Sprintf("--qmldir=%v", path))
 			if utils.QT_DOCKER() {
-				deploy.Args = append(deploy.Args, "--no-translations") //TODO:
+				deploy.Args = append(deploy.Args, "--no-translations") // TODO
 			}
 			deploy.Args = append(deploy.Args, filepath.Join(depPath, name+".exe"))
+
 			env, _, _, _ := cmd.BuildEnv(target, "", "")
 			for key, value := range env {
 				deploy.Env = append(deploy.Env, fmt.Sprintf("%v=%v", key, value))
 			}
-
 			utils.RunCmd(deploy, fmt.Sprintf("depoy %v on %v", target, runtime.GOOS))
 
-			var libraryPath = filepath.Join(utils.QT_MSYS2_DIR(), "bin")
-			for _, d := range []string{"libbz2-1", "libfreetype-6", "libglib-2.0-0", "libharfbuzz-0", "libiconv-2", "libintl-8", "libpcre-1", "libpcre16-0", "libpng16-16", "libstdc++-6", "libwinpthread-1", "zlib1", "libgraphite2", "libeay32", "ssleay32", "libcrypto-1_1-x64", "libpcre2-16-0", "libssl-1_1-x64", "libdouble-conversion", "libzstd"} {
-				if utils.QT_MSYS2_ARCH() == "386" {
-					d = strings.TrimSuffix(d, "-x64")
-				}
+			libraryPath := filepath.Join(utils.QT_MSYS2_DIR(), "bin")
 
-				if d == "libeay32" || d == "ssleay32" {
-					utils.RunCmdOptional(exec.Command(copyCmd, filepath.Join(utils.QT_MSYS2_DIR(), "..", "opt", "bin", fmt.Sprintf("%v.dll", d)), depPath), fmt.Sprintf("copy %v for %v on %v", d, target, runtime.GOOS))
-				} else {
-					utils.RunCmdOptional(exec.Command(copyCmd, filepath.Join(libraryPath, fmt.Sprintf("%v.dll", d)), depPath), fmt.Sprintf("copy %v for %v on %v", d, target, runtime.GOOS))
+			arch := utils.QT_MSYS2_ARCH() // "amd64" / "arm64" / "386"
+			archSuffix := ""
+			switch arch {
+			case "amd64":
+				archSuffix = "x64"
+			case "arm64":
+				archSuffix = "arm64"
+			default:
+				archSuffix = "" // 32bit は無印
+			}
+
+			tryCopy := func(dll string) {
+				cands := []string{
+					filepath.Join(libraryPath, dll+".dll"),
+					filepath.Join(utils.QT_MSYS2_DIR(), "..", "opt", "bin", dll+".dll"),
+				}
+				for _, p := range cands {
+					if utils.ExistsFile(p) {
+						utils.RunCmdOptional(exec.Command(copyCmd, p, depPath), fmt.Sprintf("copy %v for %v on %v", filepath.Base(p), target, runtime.GOOS))
+						return
+					}
 				}
 			}
+
+			baseLibs := []string{
+				"libbz2-1", "libfreetype-6", "libglib-2.0-0", "libharfbuzz-0",
+				"libiconv-2", "libintl-8", "libpcre-1", "libpcre16-0", "libpcre2-16-0",
+				"libpng16-16", "libwinpthread-1", "zlib1", "libgraphite2",
+				"libdouble-conversion", "libzstd",
+			}
+			extraCxx := []string{"libstdc++-6", "libc++_shared-1", "libunwind"}
+
+			openssl := []string{
+				"libeay32", "ssleay32",
+				fmt.Sprintf("libcrypto-1_1-%s", archSuffix),
+				fmt.Sprintf("libssl-1_1-%s", archSuffix),
+				fmt.Sprintf("libcrypto-3-%s", archSuffix),
+				fmt.Sprintf("libssl-3-%s", archSuffix),
+			}
+
+			for _, d := range baseLibs {
+				tryCopy(d)
+			}
+			for _, d := range extraCxx {
+				tryCopy(d)
+			}
+			for _, d := range openssl {
+				if arch == "386" {
+					d = strings.TrimSuffix(strings.TrimSuffix(d, "-x64"), "-arm64")
+				}
+				tryCopy(d)
+			}
+
 			for _, icu := range []string{"icudt", "icuin", "icuuc"} {
-				for i := 55; i < 70; i++ {
+				for i := 55; i < 80; i++ {
 					lib := filepath.Join(libraryPath, fmt.Sprintf("lib%v%v.dll", icu, i))
 					if utils.ExistsFile(lib) {
 						utils.RunCmd(exec.Command(copyCmd, lib, depPath), fmt.Sprintf("copy %v for %v on %v", filepath.Base(lib), target, runtime.GOOS))
@@ -502,32 +546,40 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 				}
 			}
 
-			var gccDep = "libgcc_s_dw2-1"
-			if utils.QT_MSYS2_ARCH() == "amd64" {
-				gccDep = "libgcc_s_seh-1"
+			for _, gccDep := range []string{
+				"libgcc_s_seh-1", // x64 (SEH)
+				"libgcc_s_dw2-1", // x86 (DW2)
+				"libgcc_s_sjlj-1",
+				"libc++_shared-1", // clang++ stdlib
+				"libunwind",
+			} {
+				p := filepath.Join(libraryPath, gccDep+".dll")
+				if utils.ExistsFile(p) {
+					utils.RunCmdOptional(exec.Command(copyCmd, p, depPath), fmt.Sprintf("copy %v for %v on %v", gccDep, target, runtime.GOOS))
+				}
 			}
 
-			utils.RunCmdOptional(exec.Command(copyCmd, filepath.Join(libraryPath, fmt.Sprintf("%v.dll", gccDep)), depPath), fmt.Sprintf("copy %v for %v on %v", gccDep, target, runtime.GOOS))
-
-			libraryPath = filepath.Join(utils.QT_MSYS2_DIR(), "share", "qt5")
+			qtShare := filepath.Join(utils.QT_MSYS2_DIR(), "share", "qt5")
 			if utils.MSYSTEM() != "" {
-				utils.RunCmd(exec.Command("cp", "-R", filepath.Join(libraryPath, "qml/")+"/.", depPath), fmt.Sprintf("copy qml dir for %v on %v", target, runtime.GOOS))
-				utils.RunCmd(exec.Command("cp", "-R", filepath.Join(libraryPath, "plugins/")+"/.", depPath), fmt.Sprintf("copy plugins dir for %v on %v", target, runtime.GOOS))
+				utils.RunCmd(exec.Command("cp", "-R", filepath.Join(qtShare, "qml/")+"/.", depPath), fmt.Sprintf("copy qml dir for %v on %v", target, runtime.GOOS))
+				utils.RunCmd(exec.Command("cp", "-R", filepath.Join(qtShare, "plugins/")+"/.", depPath), fmt.Sprintf("copy plugins dir for %v on %v", target, runtime.GOOS))
 			} else {
-				utils.RunCmd(exec.Command("xcopy", "/S", "/Y", filepath.Join(libraryPath, "qml/"), depPath), fmt.Sprintf("copy qml dir for %v on %v", target, runtime.GOOS))
-				utils.RunCmd(exec.Command("xcopy", "/S", "/Y", filepath.Join(libraryPath, "plugins/"), depPath), fmt.Sprintf("copy plugins dir for %v on %v", target, runtime.GOOS))
+				utils.RunCmd(exec.Command("xcopy", "/S", "/Y", filepath.Join(qtShare, "qml/"), depPath), fmt.Sprintf("copy qml dir for %v on %v", target, runtime.GOOS))
+				utils.RunCmd(exec.Command("xcopy", "/S", "/Y", filepath.Join(qtShare, "plugins/"), depPath), fmt.Sprintf("copy plugins dir for %v on %v", target, runtime.GOOS))
 			}
 
 			libraryPath = filepath.Join(utils.QT_MSYS2_DIR(), "bin")
-			var output = utils.RunCmd(exec.Command(utils.ToolPath("objdump", target), "-x", filepath.Join(depPath, name+".exe")), fmt.Sprintf("objdump binary for %v on %v", target, runtime.GOOS))
+			output := utils.RunCmd(exec.Command(utils.ToolPath("objdump", target), "-x", filepath.Join(depPath, name+".exe")), fmt.Sprintf("objdump binary for %v on %v", target, runtime.GOOS))
 			for lib, deps := range parser.LibDeps {
 				if strings.Contains(output, lib) && lib != parser.MOC {
 					for _, lib := range append(deps, lib) {
-						if utils.ExistsFile(filepath.Join(libraryPath, fmt.Sprintf("Qt5%v.dll", lib))) && !utils.ExistsFile(filepath.Join(depPath, fmt.Sprintf("Qt5%v.dll", lib))) {
+						src := filepath.Join(libraryPath, fmt.Sprintf("Qt5%v.dll", lib))
+						dst := filepath.Join(depPath, fmt.Sprintf("Qt5%v.dll", lib))
+						if utils.ExistsFile(src) && !utils.ExistsFile(dst) {
 							if utils.MSYSTEM() != "" {
-								utils.RunCmd(exec.Command(copyCmd, filepath.Join(libraryPath, fmt.Sprintf("Qt5%v.dll", lib)), depPath), fmt.Sprintf("copy %v for %v on %v", lib, target, runtime.GOOS))
+								utils.RunCmd(exec.Command(copyCmd, src, depPath), fmt.Sprintf("copy %v for %v on %v", lib, target, runtime.GOOS))
 							} else {
-								utils.RunCmd(exec.Command("xcopy", "/Y", filepath.Join(libraryPath, fmt.Sprintf("Qt5%v.dll", lib)), depPath), fmt.Sprintf("copy %v for %v on %v", lib, target, runtime.GOOS))
+								utils.RunCmd(exec.Command("xcopy", "/Y", src, depPath), fmt.Sprintf("copy %v for %v on %v", lib, target, runtime.GOOS))
 							}
 						}
 					}
@@ -539,16 +591,17 @@ func bundle(mode, target, path, name, depPath string, tagsCustom string, fast bo
 				deps = append(deps, []string{"libjpeg-8", "libsqlite3-0", "libwebp-7", "libxml2-2", "liblzma-5", "libxslt-1"}...)
 			}
 			for _, lib := range deps {
+				src := filepath.Join(libraryPath, fmt.Sprintf("%v.dll", lib))
 				if utils.MSYSTEM() != "" {
-					utils.RunCmd(exec.Command(copyCmd, filepath.Join(libraryPath, fmt.Sprintf("%v.dll", lib)), depPath), fmt.Sprintf("copy %v for %v on %v", lib, target, runtime.GOOS))
+					utils.RunCmd(exec.Command(copyCmd, src, depPath), fmt.Sprintf("copy %v for %v on %v", lib, target, runtime.GOOS))
 				} else {
-					utils.RunCmd(exec.Command("xcopy", "/Y", filepath.Join(libraryPath, fmt.Sprintf("%v.dll", lib)), depPath), fmt.Sprintf("copy %v for %v on %v", lib, target, runtime.GOOS))
+					utils.RunCmd(exec.Command("xcopy", "/Y", src, depPath), fmt.Sprintf("copy %v for %v on %v", lib, target, runtime.GOOS))
 				}
 			}
 
-			filepath.Walk(depPath, func(path string, info os.FileInfo, err error) error {
-				if strings.HasSuffix(info.Name(), "d.dll") && !strings.HasSuffix(info.Name(), "board.dll") {
-					utils.RemoveAll(path)
+			filepath.Walk(depPath, func(p string, info os.FileInfo, err error) error {
+				if err == nil && info != nil && strings.HasSuffix(info.Name(), "d.dll") && !strings.HasSuffix(info.Name(), "board.dll") {
+					utils.RemoveAll(p)
 				}
 				return nil
 			})

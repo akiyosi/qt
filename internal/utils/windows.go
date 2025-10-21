@@ -14,35 +14,65 @@ func QT_MSYS2() bool {
 
 func QT_MSYS2_DIR() string {
 	if dir, ok := os.LookupEnv("QT_MSYS2_DIR"); ok {
-		if QT_MSYS2_ARCH() == "amd64" {
+		switch QT_MSYS2_ARCH() {
+		case "amd64":
 			return filepath.Join(dir, "mingw64")
+		case "arm64":
+			return filepath.Join(dir, "clangarm64")
+		default:
+			return filepath.Join(dir, "mingw32")
 		}
-		return filepath.Join(dir, "mingw32")
 	}
-	prefix := "msys32"
-	if runtime.GOARCH == "amd64" {
-		prefix = "msys64"
+	// default prefix
+	prefix := "msys64"
+	if QT_MSYS2_ARCH() == "386" {
+		prefix = "msys32"
 	}
+	// choose subdir by arch
 	suffix := "mingw32"
-	if QT_MSYS2_ARCH() == "amd64" {
+	switch QT_MSYS2_ARCH() {
+	case "amd64":
 		suffix = "mingw64"
+	case "arm64":
+		suffix = "clangarm64"
 	}
 	return fmt.Sprintf("%v\\%v\\%v", windowsSystemDrive(), prefix, suffix)
 }
 
 func IsMsys2QtDir() bool {
-	return ExistsFile(filepath.Join(os.Getenv("QT_MSYS2_DIR"), "msys2.exe"))
+	d := os.Getenv("QT_MSYS2_DIR")
+	if d == "" {
+		return false
+	}
+	if ExistsFile(filepath.Join(d, "msys2.exe")) {
+		return true
+	}
+	if ExistsFile(filepath.Join(d, "bin", "qmake.exe")) {
+		return true
+	}
+	return ExistsDir(d)
 }
 
 func QT_MSYS2_ARCH() string {
-	arch, ok := os.LookupEnv("QT_MSYS2_ARCH")
-	if ok {
+	if arch, ok := os.LookupEnv("QT_MSYS2_ARCH"); ok {
 		return arch
 	}
-	if MSYSTEM() == "MINGW64" || (!ok && runtime.GOARCH == "amd64") {
+	switch MSYSTEM() {
+	case "CLANGARM64":
+		return "arm64"
+	case "MINGW64":
 		return "amd64"
+	case "MINGW32":
+		return "386"
 	}
-	return "386"
+	switch runtime.GOARCH {
+	case "arm64":
+		return "arm64"
+	case "amd64":
+		return "amd64"
+	default:
+		return "386"
+	}
 }
 
 func QT_MSYS2_STATIC() bool {

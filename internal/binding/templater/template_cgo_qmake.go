@@ -78,7 +78,7 @@ func cgoTemplate(module, path, target string, mode int, ipkg, tags string, libs 
 	return
 }
 
-//TODO: use qmake props ?
+// TODO: use qmake props ?
 func isAlreadyCached(module, path, target string, mode int, libs []string) bool {
 	if utils.QT_NOT_CACHED() {
 		return false
@@ -751,10 +751,10 @@ func createCgo(module, path, target string, mode int, ipkg, tags string) string 
 				tmp = strings.Replace(tmp, " -lwinmm ", " ", -1)
 				tmp = strings.Replace(tmp, " -lkernel32 ", " -lwinmm -lkernel32 ", -1)
 			}
-			if utils.QT_MSYS2() && utils.QT_MSYS2_ARCH() == "amd64" {
+			if utils.QT_MSYS2() && (utils.QT_MSYS2_ARCH() == "amd64" || utils.QT_MSYS2_ARCH() == "arm64") {
 				tmp = strings.Replace(tmp, " -Wa,-mbig-obj ", " ", -1)
 			}
-			if (utils.QT_MSYS2() && utils.QT_MSYS2_ARCH() == "amd64") || utils.QT_MXE_ARCH() == "amd64" ||
+			if (utils.QT_MSYS2() && (utils.QT_MSYS2_ARCH() == "amd64" || utils.QT_MSYS2_ARCH() == "arm64")) || utils.QT_MXE_ARCH() == "amd64" ||
 				(!utils.QT_MXE() && !utils.QT_MSYS2() && utils.QT_VERSION_NUM() >= 5120) {
 				tmp = strings.Replace(tmp, " -Wl,-s ", " ", -1)
 			}
